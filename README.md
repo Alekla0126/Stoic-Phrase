@@ -1,5 +1,3 @@
----
-
 # Stoic Phrase
 
 **Stoic Phrase** is a lightweight bash script that fetches a stoic quote from an online API and displays it in vibrant, colorful text using [lolcat](https://github.com/busyloop/lolcat). It’s a fun and inspirational way to receive daily stoic wisdom right in your terminal!
@@ -127,5 +125,3 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 - [Stoic Quotes API](https://stoic-quotes.com/api/quote) for the inspirational quotes.
 - [lolcat](https://github.com/busyloop/lolcat) for making terminal output colorful.
-
----
