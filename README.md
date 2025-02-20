@@ -1,5 +1,3 @@
-Below is an example of a README file you can include in your repository:
-
 ---
 
 # Stoic Phrase
