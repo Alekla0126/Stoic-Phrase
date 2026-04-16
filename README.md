@@ -1,127 +1,81 @@
 # Stoic Phrase
 
-**Stoic Phrase** is a lightweight bash script that fetches a stoic quote from an online API and displays it in vibrant, colorful text using [lolcat](https://github.com/busyloop/lolcat). It’s a fun and inspirational way to receive daily stoic wisdom right in your terminal!
+**Stoic Phrase** is a Bash CLI that prints a configurable ASCII banner, stores a chosen username and style, and then fetches a Stoic quote from the public API. It can also enable itself in your shell startup so the banner appears when you open a terminal.
 
-## Features
+## What it does
 
-- **Fetches a Stoic Quote:** Uses [Stoic Quotes API](https://stoic-quotes.com/api/quote) to get a random quote.
-- **Colorful Output:** Pipes the quote through `lolcat` for a rainbow-colored display.
-- **Lightweight & Portable:** A simple bash script that works on any Unix-like system.
+- Shows a banner with your chosen username.
+- Prompts for a username and ASCII style on the first interactive run and saves them under `~/.config/stoic-phrase/`.
+- Can add itself to your shell startup so the banner appears automatically.
+- Fetches a Stoic quote from [Stoic Quotes API](https://stoic-quotes.com/api/quote).
+- Colors the output with [lolcat](https://github.com/busyloop/lolcat) when available.
+- Falls back to a local quote if the API is unavailable.
 
-## Prerequisites
+## Requirements
 
-Before running the script, ensure you have the following installed:
+- `bash`
+- `curl`
+- `jq`
+- `lolcat`
 
-- [bash](https://www.gnu.org/software/bash/) (usually pre-installed)
-- [curl](https://curl.se/)
-- [jq](https://stedolan.github.io/jq/) – for parsing JSON data
-- [lolcat](https://github.com/busyloop/lolcat) – for colorful terminal output
-
-## Installation
-
-### Manual Installation
-
-1. **Download the Script:**
-
-   Clone the repository or download the `stoic-phrase.sh` file.
-
-2. **Make It Executable:**
-
-   ```bash
-   chmod +x stoic-phrase.sh
-   ```
-
-3. **Run the Script:**
-
-   ```bash
-   ./stoic-phrase.sh
-   ```
-
-### Installation via Homebrew Tap
-
-You can also install **Stoic Phrase** using Homebrew by tapping into a custom repository.
-
-1. **Tap the Repository:**
-
-   ```bash
-   brew tap yourusername/stoic-phrase
-   ```
-
-2. **Install the Script:**
-
-   ```bash
-   brew install stoic-phrase
-   ```
-
-3. **Run the Command:**
-
-   Once installed, simply run:
-
-   ```bash
-   stoic-phrase
-   ```
-
-## Usage
-
-Run the command (either the script directly or via Homebrew) to fetch and display a new stoic quote in colorful text:
+## Run locally
 
 ```bash
-stoic-phrase
+chmod +x stoic-phrase.sh
+./stoic-phrase.sh
 ```
 
-Each execution fetches a new quote from the API and pipes it through `lolcat` for an eye-catching display.
+On the first interactive run, the script asks for a username and saves it for later sessions.
+It also asks which ASCII style you want and whether it should open automatically in new terminals.
 
-## Publishing a New Release
+## Homebrew
 
-To publish a new release on GitHub (so users and Homebrew can reference a specific version):
+This repository already contains a Homebrew formula in `Formula/stoic-phrase.rb`.
 
-1. **Push Your Code:**
+```bash
+brew tap Alekla0126/stoic-phrase https://github.com/Alekla0126/Stoic-Phrase
+brew install stoic-phrase
+```
 
-   Make sure your script is pushed to a GitHub repository.
+Homebrew installs the command into your `PATH` automatically. If you want the
+banner to appear every time a terminal opens, run:
 
-2. **Create a Git Tag:**
+```bash
+stoic-phrase --enable-startup
+```
 
-   In your repository’s root directory, create a tag for your release:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
+The first interactive launch can also offer to enable startup for you.
 
-3. **Draft a New Release on GitHub:**
+## Commands
 
-   - Navigate to your repository on GitHub.
-   - Click on the **Releases** tab.
-   - Click **Draft a new release** and select the tag you just pushed.
-   - Add a title and description, then click **Publish release**.
+```bash
+stoic-phrase               # banner + quote
+stoic-phrase --configure   # set or change the saved username and style
+stoic-phrase --enable-startup  # add the startup hook
+stoic-phrase --disable-startup # remove the startup hook
+stoic-phrase --banner-only # only show the banner
+stoic-phrase --quote-only  # only show the quote
+```
 
-4. **Update Your Homebrew Formula:**
+## Environment variables
 
-   Use the URL of the generated tarball (e.g., `v1.0.0.tar.gz`) and generate its SHA256 checksum to update your Homebrew formula.
+```bash
+STOIC_PHRASE_USERNAME="Alex" stoic-phrase
+STOIC_PHRASE_STYLE="bold" stoic-phrase
+STOIC_PHRASE_QUOTE="La disciplina es libertad." stoic-phrase
+STOIC_PHRASE_DISABLED=1 source "$(brew --prefix)/opt/stoic-phrase/share/stoic-phrase/stoic-phrase.sh"
+```
 
-## Contributing
+## Release flow
 
-Contributions are welcome! To contribute:
+When you are ready to publish a new version:
 
-1. Fork the repository.
-2. Create your feature branch:
-   ```bash
-   git checkout -b feature/new-feature
-   ```
-3. Commit your changes:
-   ```bash
-   git commit -am 'Add new feature'
-   ```
-4. Push to the branch:
-   ```bash
-   git push origin feature/new-feature
-   ```
-5. Open a Pull Request on GitHub.
+1. Update the script or formula.
+2. Tag the release, for example `v1.2.0`.
+3. Push the tag to GitHub.
+4. Update `Formula/stoic-phrase.rb` so the `tag` points to that release.
+5. Create or update the GitHub release notes.
 
-## License
+## Open source
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Stoic Quotes API](https://stoic-quotes.com/api/quote) for the inspirational quotes.
-- [lolcat](https://github.com/busyloop/lolcat) for making terminal output colorful.
+MIT licensed. See [`LICENSE`](LICENSE).
