@@ -33,7 +33,9 @@ EOF
 }
 
 colorize() {
-  if command -v lolcat >/dev/null 2>&1; then
+  if [[ -n "${STOIC_PHRASE_NO_COLOR:-}" ]]; then
+    cat
+  elif command -v lolcat >/dev/null 2>&1; then
     lolcat -f
   else
     cat
@@ -177,7 +179,7 @@ run_startup() {
   author="$(printf '%s' "$raw" | tail -1)"
 
   {
-    if command -v toilet >/dev/null 2>&1; then
+    if [[ -z "${STOIC_PHRASE_NO_COLOR:-}" ]] && command -v toilet >/dev/null 2>&1; then
       printf '%s' "$username" | toilet -f smblock --gay 2>/dev/null
     fi
     printf '\n"%s"\n\n  -- %s\n\n' "$quote" "$author"
