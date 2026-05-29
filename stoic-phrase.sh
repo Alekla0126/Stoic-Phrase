@@ -168,17 +168,9 @@ run_startup() {
   local first_run=0
   [[ ! -f "$USERNAME_FILE" ]] && first_run=1
 
-  local username
-  username="$(resolve_username)"
+  resolve_username > /dev/null
 
-  {
-    printf '\n'
-    printf '  ~  S T O I C   P H R A S E  ~   %s\n' "$username"
-    printf '  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'
-    printf '\n'
-    fetch_quote
-    printf '\n'
-  } | colorize
+  { printf '\n'; fetch_quote; printf '\n'; } | colorize
 
   if [[ "$first_run" -eq 1 ]]; then
     enable_startup_hook
