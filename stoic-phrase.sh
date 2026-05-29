@@ -34,7 +34,7 @@ EOF
 
 colorize() {
   if command -v lolcat >/dev/null 2>&1; then
-    lolcat
+    lolcat -f
   else
     cat
   fi
@@ -175,7 +175,12 @@ run_startup() {
   quote="$(printf '%s' "$raw" | head -1)"
   author="$(printf '%s' "$raw" | tail -1)"
 
-  { printf '\n"%s"\n\n  -- %s\n\n' "$quote" "$author"; } | colorize
+  {
+    if command -v toilet >/dev/null 2>&1; then
+      printf 'STOIC' | toilet -f smblock --gay 2>/dev/null
+    fi
+    printf '\n"%s"\n\n  -- %s\n\n' "$quote" "$author"
+  } | colorize
 
   if [[ "$first_run" -eq 1 ]]; then
     enable_startup_hook
