@@ -168,7 +168,8 @@ run_startup() {
   local first_run=0
   [[ ! -f "$USERNAME_FILE" ]] && first_run=1
 
-  resolve_username > /dev/null
+  local username
+  username="$(resolve_username)"
 
   local raw quote author
   raw="$(fetch_quote)"
@@ -177,7 +178,7 @@ run_startup() {
 
   {
     if command -v toilet >/dev/null 2>&1; then
-      printf 'STOIC' | toilet -f smblock --gay 2>/dev/null
+      printf '%s' "$username" | toilet -f smblock --gay 2>/dev/null
     fi
     printf '\n"%s"\n\n  -- %s\n\n' "$quote" "$author"
   } | colorize

@@ -2,8 +2,8 @@ class StoicPhrase < Formula
   desc "Shows a Stoic banner and quote in the terminal"
   homepage "https://github.com/Alekla0126/Stoic-Phrase"
   url "https://github.com/Alekla0126/Stoic-Phrase.git",
-      tag: "v1.6.0"
-  version "1.6.0"
+      tag: "v1.7.0"
+  version "1.7.0"
   license "MIT"
 
   uses_from_macos "curl"
