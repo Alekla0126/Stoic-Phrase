@@ -1,8 +1,8 @@
 class StoicPhrase < Formula
   desc "Shows a colorful Stoic quote with author in your terminal on every session"
   homepage "https://github.com/Alekla0126/Stoic-Phrase"
-  url "https://github.com/Alekla0126/Stoic-Phrase/archive/refs/tags/v1.7.0.tar.gz"
-  sha256 "8c8b25cd0dccf11f560cb46d783876817de1f7fea03acf0cc61f8302310dda8d"
+  url "https://github.com/Alekla0126/Stoic-Phrase/archive/refs/tags/v1.8.0.tar.gz"
+  sha256 "2f8c46bae9c52e92ddce1d9eb080a64389c46aeff4b69b1dd1801c8ed4fd9760"
   license "MIT"
 
   depends_on "jq"
