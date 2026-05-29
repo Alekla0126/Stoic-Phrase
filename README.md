@@ -36,7 +36,7 @@ It also asks which ASCII style you want and whether it should open automatically
 ### Homebrew (recommended — macOS & Linux)
 
 ```bash
-brew tap alekla0126/stoic-phrase
+brew tap alekla0126/stoic-phrase https://github.com/Alekla0126/Stoic-Phrase
 brew install stoic-phrase
 ```
 
