@@ -2,14 +2,13 @@ class StoicPhrase < Formula
   desc "Shows a Stoic banner and quote in the terminal"
   homepage "https://github.com/Alekla0126/Stoic-Phrase"
   url "https://github.com/Alekla0126/Stoic-Phrase.git",
-      tag: "v1.4.0"
-  version "1.4.0"
+      tag: "v1.5.0"
+  version "1.5.0"
   license "MIT"
 
   uses_from_macos "curl"
   depends_on "jq"
   depends_on "lolcat"
-  depends_on "toilet"
 
   def install
     bin.install "stoic-phrase.sh" => "stoic-phrase"

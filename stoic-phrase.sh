@@ -32,27 +32,11 @@ Environment:
 EOF
 }
 
-ascii_color() {
-  local text="$1"
-  if command -v toilet >/dev/null 2>&1; then
-    printf '%s' "$text" | toilet -f term --gay 2>/dev/null \
-      || printf '%s\n' "$text"
-  elif command -v lolcat >/dev/null 2>&1; then
-    printf '%s\n' "$text" | lolcat
+colorize() {
+  if command -v lolcat >/dev/null 2>&1; then
+    lolcat
   else
-    printf '%s\n' "$text"
-  fi
-}
-
-ascii_art() {
-  local text="$1"
-  if command -v toilet >/dev/null 2>&1; then
-    printf '%s' "$text" | toilet -f smblock --gay 2>/dev/null \
-      || printf '%s\n' "$text"
-  elif command -v lolcat >/dev/null 2>&1; then
-    printf '%s\n' "$text" | lolcat
-  else
-    printf '%s\n' "$text"
+    cat
   fi
 }
 
@@ -191,11 +175,7 @@ run_startup() {
   quote="$(printf '%s' "$raw" | head -1)"
   author="$(printf '%s' "$raw" | tail -1)"
 
-  printf '\n'
-  ascii_art "$quote"
-  printf '\n'
-  ascii_color "  -- $author"
-  printf '\n'
+  { printf '\n"%s"\n\n  -- %s\n\n' "$quote" "$author"; } | colorize
 
   if [[ "$first_run" -eq 1 ]]; then
     enable_startup_hook
