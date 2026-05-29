@@ -28,23 +28,33 @@ chmod +x stoic-phrase.sh
 On the first interactive run, the script asks for a username and saves it for later sessions.
 It also asks which ASCII style you want and whether it should open automatically in new terminals.
 
-## Homebrew
+## Installation
 
-This repository already contains a Homebrew formula in `Formula/stoic-phrase.rb`.
+### Homebrew (recommended — macOS & Linux)
 
 ```bash
-brew tap Alekla0126/stoic-phrase https://github.com/Alekla0126/Stoic-Phrase
+brew tap alekla0126/stoic-phrase
 brew install stoic-phrase
 ```
 
-Homebrew installs the command into your `PATH` automatically. If you want the
-banner to appear every time a terminal opens, run:
+That's it. Homebrew resolves all dependencies (`jq`, `lolcat`) automatically and puts `stoic-phrase` on your `PATH`.
+
+To show a Stoic banner every time you open a terminal:
 
 ```bash
 stoic-phrase --enable-startup
 ```
 
-The first interactive launch can also offer to enable startup for you.
+> **First run?** The script will ask for your name and an ASCII style — answers are saved to `~/.config/stoic-phrase/` so you never have to repeat them.
+
+### Manual (any POSIX shell)
+
+```bash
+git clone https://github.com/Alekla0126/Stoic-Phrase.git
+cd Stoic-Phrase
+chmod +x stoic-phrase.sh
+./stoic-phrase.sh
+```
 
 ## Commands
 
