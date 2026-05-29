@@ -32,11 +32,27 @@ Environment:
 EOF
 }
 
-colorize() {
-  if command -v lolcat >/dev/null 2>&1; then
-    lolcat --seed=42 2>/dev/null || lolcat
+ascii_color() {
+  local text="$1"
+  if command -v toilet >/dev/null 2>&1; then
+    printf '%s' "$text" | toilet -f term --gay 2>/dev/null \
+      || printf '%s\n' "$text"
+  elif command -v lolcat >/dev/null 2>&1; then
+    printf '%s\n' "$text" | lolcat
   else
-    cat
+    printf '%s\n' "$text"
+  fi
+}
+
+ascii_art() {
+  local text="$1"
+  if command -v toilet >/dev/null 2>&1; then
+    printf '%s' "$text" | toilet -f smblock --gay 2>/dev/null \
+      || printf '%s\n' "$text"
+  elif command -v lolcat >/dev/null 2>&1; then
+    printf '%s\n' "$text" | lolcat
+  else
+    printf '%s\n' "$text"
   fi
 }
 
@@ -138,28 +154,28 @@ configure_profile() {
 }
 
 fetch_quote() {
-  if [[ -n "${STOIC_PHRASE_QUOTE:-}" ]]; then
-    printf '%s\n' "$STOIC_PHRASE_QUOTE"
-    return
-  fi
-
   local response="" quote="" author=""
-  if command -v curl >/dev/null 2>&1; then
-    response="$(curl -fsS -L --max-time 10 "$API_URL" 2>/dev/null || true)"
+
+  if [[ -n "${STOIC_PHRASE_QUOTE:-}" ]]; then
+    quote="$STOIC_PHRASE_QUOTE"
+    author="${STOIC_PHRASE_AUTHOR:-$DEFAULT_AUTHOR}"
+  else
+    if command -v curl >/dev/null 2>&1; then
+      response="$(curl -fsS -L --max-time 10 "$API_URL" 2>/dev/null || true)"
+    fi
+    if [[ -n "$response" ]] && command -v jq >/dev/null 2>&1; then
+      quote="$(printf '%s' "$response"  | jq -r '.text  // .quote  // empty' 2>/dev/null || true)"
+      author="$(printf '%s' "$response" | jq -r '.author // empty' 2>/dev/null || true)"
+    fi
+    if [[ -z "$quote" || "$quote" == "null" ]]; then
+      quote="$DEFAULT_QUOTE"
+      author="$DEFAULT_AUTHOR"
+    fi
+    [[ -z "$author" || "$author" == "null" ]] && author="$DEFAULT_AUTHOR"
   fi
 
-  if [[ -n "$response" ]] && command -v jq >/dev/null 2>&1; then
-    quote="$(printf '%s' "$response"  | jq -r '.text  // .quote  // empty' 2>/dev/null || true)"
-    author="$(printf '%s' "$response" | jq -r '.author // empty' 2>/dev/null || true)"
-  fi
-
-  if [[ -z "$quote" || "$quote" == "null" ]]; then
-    quote="$DEFAULT_QUOTE"
-    author="$DEFAULT_AUTHOR"
-  fi
-  [[ -z "$author" || "$author" == "null" ]] && author="$DEFAULT_AUTHOR"
-
-  printf '"%s"\n\n    -- %s\n' "$quote" "$author"
+  # Return as two lines: quote \n author
+  printf '%s\n%s\n' "$quote" "$author"
 }
 
 run_startup() {
@@ -170,7 +186,16 @@ run_startup() {
 
   resolve_username > /dev/null
 
-  { printf '\n'; fetch_quote; printf '\n'; } | colorize
+  local raw quote author
+  raw="$(fetch_quote)"
+  quote="$(printf '%s' "$raw" | head -1)"
+  author="$(printf '%s' "$raw" | tail -1)"
+
+  printf '\n'
+  ascii_art "$quote"
+  printf '\n'
+  ascii_color "  -- $author"
+  printf '\n'
 
   if [[ "$first_run" -eq 1 ]]; then
     enable_startup_hook
