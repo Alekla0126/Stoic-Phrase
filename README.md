@@ -14,9 +14,12 @@
 ## Requirements
 
 - `bash`
-- `curl`
-- `jq`
-- `lolcat`
+- `curl` (incluido en macOS)
+- `figlet` — arte ASCII del banner
+- `jq` — parseo de la API
+- `lolcat` — colores en la salida
+
+> Con Homebrew todas las dependencias se instalan automáticamente.
 
 ## Run locally
 

@@ -4,6 +4,7 @@ set -euo pipefail
 APP_NAME="stoic-phrase"
 API_URL="https://stoic-quotes.com/api/quote"
 DEFAULT_QUOTE="La disciplina de hoy se convierte en libertad mañana."
+DEFAULT_AUTHOR="Anónimo"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/${APP_NAME}"
 USERNAME_FILE="${CONFIG_DIR}/username"
 STYLE_FILE="${CONFIG_DIR}/style"
@@ -39,141 +40,97 @@ Environment:
 EOF
 }
 
-render_output() {
+colorize() {
   if command -v lolcat >/dev/null 2>&1; then
-    lolcat
+    lolcat --seed=42 2>/dev/null || lolcat
   else
     cat
   fi
 }
 
 repeat_char() {
-  local char="$1"
-  local count="$2"
-  local output=""
-
+  local char="$1" count="$2" output=""
   while [[ "$count" -gt 0 ]]; do
     output="${output}${char}"
     count=$((count - 1))
   done
-
   printf '%s' "$output"
 }
 
 center_text() {
-  local text="$1"
-  local width="$2"
-  local text_length="${#text}"
-
-  if [[ "$text_length" -ge "$width" ]]; then
+  local text="$1" width="$2"
+  local len="${#text}"
+  if [[ "$len" -ge "$width" ]]; then
     printf '%s' "$text"
     return
   fi
-
-  local total_padding=$((width - text_length))
-  local left_padding=$((total_padding / 2))
-  local right_padding=$((total_padding - left_padding))
-
-  printf '%*s%s%*s' "$left_padding" '' "$text" "$right_padding" ''
+  local pad=$(( (width - len) / 2 ))
+  local rpad=$(( width - len - pad ))
+  printf '%*s%s%*s' "$pad" '' "$text" "$rpad" ''
 }
 
 read_saved_value() {
-  local file_path="$1"
-  local saved_value=""
-
+  local file_path="$1" val=""
   if [[ -f "$file_path" ]]; then
-    IFS= read -r saved_value < "$file_path" || true
-    if [[ -n "${saved_value// }" ]]; then
-      printf '%s\n' "$saved_value"
+    IFS= read -r val < "$file_path" || true
+    if [[ -n "${val// }" ]]; then
+      printf '%s\n' "$val"
       return 0
     fi
   fi
-
   return 1
 }
 
 save_value() {
-  local file_path="$1"
-  local value="$2"
-
   mkdir -p "$CONFIG_DIR"
-  printf '%s\n' "$value" > "$file_path"
+  printf '%s\n' "$2" > "$1"
 }
 
 prompt_yes_no() {
-  local prompt="$1"
   local answer=""
-
-  printf '%s [Y/n]: ' "$prompt" >&2
+  printf '%s [Y/n]: ' "$1" >&2
   IFS= read -r answer || true
-
   case "$(printf '%s' "$answer" | tr '[:upper:]' '[:lower:]')" in
-    n|no)
-      return 1
-      ;;
-    *)
-      return 0
-      ;;
+    n|no) return 1 ;;
+    *)    return 0 ;;
   esac
 }
 
 prompt_for_username() {
-  local default_name="${USER:-stoic}"
-  local username=""
-
+  local default_name="${USER:-stoic}" username=""
   printf 'Elige tu nombre de usuario [%s]: ' "$default_name" >&2
   IFS= read -r username || true
-  username="${username:-$default_name}"
-
-  printf '%s\n' "$username"
+  printf '%s\n' "${username:-$default_name}"
 }
 
 prompt_for_style() {
   local answer=""
-
   cat >&2 <<'EOF'
 Elige un estilo ASCII:
-  1) classic   - limpio y centrado
+  1) classic   - caja centrada
   2) bold      - bordes fuertes
   3) minimal   - sin borde
 EOF
   printf 'Estilo [classic]: ' >&2
   IFS= read -r answer || true
-
   case "$(printf '%s' "$answer" | tr '[:upper:]' '[:lower:]')" in
-    2|bold)
-      printf '%s\n' "bold"
-      ;;
-    3|minimal)
-      printf '%s\n' "minimal"
-      ;;
-    1|classic|"")
-      printf '%s\n' "classic"
-      ;;
-    *)
-      printf '%s\n' "classic"
-      ;;
+    2|bold)    printf 'bold\n'    ;;
+    3|minimal) printf 'minimal\n' ;;
+    *)         printf 'classic\n' ;;
   esac
 }
 
 startup_rc_file() {
   case "${SHELL:-}" in
-    */zsh)
-      printf '%s\n' "$HOME/.zshrc"
-      ;;
-    */bash)
-      printf '%s\n' "$HOME/.bashrc"
-      ;;
-    *)
-      printf '%s\n' "$HOME/.profile"
-      ;;
+    */zsh)  printf '%s\n' "$HOME/.zshrc"   ;;
+    */bash) printf '%s\n' "$HOME/.bashrc"  ;;
+    *)      printf '%s\n' "$HOME/.profile" ;;
   esac
 }
 
 startup_hook_installed() {
   local rc_file
   rc_file="$(startup_rc_file)"
-
   [[ -f "$rc_file" ]] && grep -Fq "$STARTUP_MARKER_BEGIN" "$rc_file"
 }
 
@@ -189,273 +146,198 @@ EOF
 
 enable_startup_hook() {
   local rc_file
-
   rc_file="$(startup_rc_file)"
   mkdir -p "$(dirname "$rc_file")"
-
   if startup_hook_installed; then
     printf 'El arranque automático ya está activado en %s\n' "$rc_file"
     return 0
   fi
-
-  {
-    printf '\n'
-    startup_hook_block
-    printf '\n'
-  } >> "$rc_file"
-
+  { printf '\n'; startup_hook_block; printf '\n'; } >> "$rc_file"
   printf 'Arranque automático activado en %s\n' "$rc_file"
-}
-
-offer_startup_hook() {
-  if ! startup_hook_installed && [[ -t 0 && -t 1 ]]; then
-    if prompt_yes_no "¿Quieres abrir Stoic Phrase automáticamente al abrir la terminal?"; then
-      enable_startup_hook
-    fi
-  fi
 }
 
 disable_startup_hook() {
   local rc_file tmp_file
-
   rc_file="$(startup_rc_file)"
-
   if [[ ! -f "$rc_file" ]]; then
     printf 'No existe %s\n' "$rc_file"
     return 0
   fi
-
   tmp_file="$(mktemp "${TMPDIR:-/tmp}/${APP_NAME}.XXXXXX")"
   awk -v begin="$STARTUP_MARKER_BEGIN" -v end="$STARTUP_MARKER_END" '
-    $0 == begin {skip=1; next}
-    $0 == end {skip=0; next}
-    skip != 1 {print}
+    $0 == begin { skip=1; next }
+    $0 == end   { skip=0; next }
+    skip != 1   { print }
   ' "$rc_file" > "$tmp_file"
   mv "$tmp_file" "$rc_file"
-
   printf 'Arranque automático desactivado en %s\n' "$rc_file"
 }
 
 configure_profile() {
   local chosen_username chosen_style
-
   chosen_username="$(prompt_for_username)"
   chosen_style="$(prompt_for_style)"
   save_value "$USERNAME_FILE" "$chosen_username"
   save_value "$STYLE_FILE" "$chosen_style"
-
   printf 'Perfil guardado: %s / %s\n' "$chosen_username" "$chosen_style"
-  offer_startup_hook
+  enable_startup_hook
 }
 
 resolve_username() {
-  if [[ -n "$USERNAME_OVERRIDE" ]]; then
-    printf '%s\n' "$USERNAME_OVERRIDE"
-    return
-  fi
-
-  if [[ -n "${STOIC_PHRASE_USERNAME:-}" ]]; then
-    printf '%s\n' "$STOIC_PHRASE_USERNAME"
-    return
-  fi
-
-  if read_saved_value "$USERNAME_FILE"; then
-    return
-  fi
-
+  [[ -n "$USERNAME_OVERRIDE" ]]           && { printf '%s\n' "$USERNAME_OVERRIDE"; return; }
+  [[ -n "${STOIC_PHRASE_USERNAME:-}" ]]   && { printf '%s\n' "$STOIC_PHRASE_USERNAME"; return; }
+  read_saved_value "$USERNAME_FILE"       && return
   if [[ -t 0 && -t 1 ]]; then
-    local chosen_username
-    chosen_username="$(prompt_for_username)"
-    save_value "$USERNAME_FILE" "$chosen_username"
-    printf '%s\n' "$chosen_username"
+    local u; u="$(prompt_for_username)"
+    save_value "$USERNAME_FILE" "$u"
+    printf '%s\n' "$u"
     return
   fi
-
   printf '%s\n' "${USER:-stoic}"
 }
 
 resolve_style() {
-  if [[ -n "$STYLE_OVERRIDE" ]]; then
-    printf '%s\n' "$STYLE_OVERRIDE"
-    return
-  fi
-
-  if [[ -n "${STOIC_PHRASE_STYLE:-}" ]]; then
-    printf '%s\n' "$STOIC_PHRASE_STYLE"
-    return
-  fi
-
-  if read_saved_value "$STYLE_FILE"; then
-    return
-  fi
-
+  [[ -n "$STYLE_OVERRIDE" ]]            && { printf '%s\n' "$STYLE_OVERRIDE"; return; }
+  [[ -n "${STOIC_PHRASE_STYLE:-}" ]]    && { printf '%s\n' "$STOIC_PHRASE_STYLE"; return; }
+  read_saved_value "$STYLE_FILE"        && return
   if [[ -t 0 && -t 1 ]]; then
-    local chosen_style
-    chosen_style="$(prompt_for_style)"
-    save_value "$STYLE_FILE" "$chosen_style"
-    printf '%s\n' "$chosen_style"
+    local s; s="$(prompt_for_style)"
+    save_value "$STYLE_FILE" "$s"
+    printf '%s\n' "$s"
     return
   fi
-
-  printf '%s\n' "classic"
+  printf 'classic\n'
 }
 
-print_banner() {
-  local username="$1"
-  local style="$2"
-  local title="STOIC PHRASE"
-  local greeting="Bienvenido, ${username}"
-  local content_width="${#title}"
-  local border
-  local vertical
-  local corner_left
-  local corner_right
-  local fill
-  local header_title
-  local header_padding
-
-  if [[ "${#greeting}" -gt "$content_width" ]]; then
-    content_width="${#greeting}"
-  fi
+# ASCII art fallback (no figlet)
+_box_banner() {
+  local username="$1" style="$2"
+  local title="STOIC PHRASE" greeting="Bienvenido, ${username}"
+  local w="${#title}"
+  [[ "${#greeting}" -gt "$w" ]] && w="${#greeting}"
 
   case "$style" in
     bold)
-      corner_left="#"
-      corner_right="#"
-      fill="="
-      vertical="#"
-      header_title=" STOIC PHRASE "
+      local border="#$(repeat_char '=' $((w + 4)))#"
+      printf '%s\n' "$border"
+      printf '#%s#\n' "$(center_text " STOIC PHRASE " $((w + 4)))"
+      printf '#%s#\n' "$(center_text "$greeting" $((w + 4)))"
+      printf '%s\n' "$border"
       ;;
     minimal)
       printf '%s\n' "$title"
       printf '%s\n' "$greeting"
-      return
       ;;
     *)
-      corner_left="+"
-      corner_right="+"
-      fill="-"
-      vertical="|"
-      header_title=" STOIC PHRASE "
+      local border="+$(repeat_char '-' $((w + 4)))+"
+      printf '%s\n' "$border"
+      printf '|%s|\n' "$(center_text " STOIC PHRASE " $((w + 4)))"
+      printf '|%s|\n' "$(center_text "$greeting" $((w + 4)))"
+      printf '%s\n' "$border"
       ;;
   esac
+}
 
-  border="${corner_left}$(repeat_char "$fill" $((content_width + 4)))${corner_right}"
-  header_padding=$((content_width + 4))
+print_banner() {
+  local username="$1" style="$2"
 
-  printf '%s\n' "$border"
-  printf '%s%s%s\n' "$vertical" "$(center_text "$header_title" "$header_padding")" "$vertical"
-  printf '%s%s%s\n' "$vertical" "$(center_text "$greeting" "$header_padding")" "$vertical"
-  printf '%s\n' "$border"
+  if command -v figlet >/dev/null 2>&1; then
+    case "$style" in
+      bold)
+        figlet -f banner "STOIC" 2>/dev/null || figlet "STOIC"
+        printf '\n'
+        figlet -f small "$username" 2>/dev/null || figlet "$username"
+        ;;
+      minimal)
+        figlet -f small "Stoic" 2>/dev/null || figlet "Stoic"
+        printf '\n  %s\n' "$username"
+        ;;
+      *)
+        figlet -f slant "Stoic" 2>/dev/null || figlet "Stoic"
+        printf '\n  Bienvenido, %s\n' "$username"
+        ;;
+    esac
+  else
+    _box_banner "$username" "$style"
+  fi
 }
 
 fetch_quote() {
-  local response quote author
-
   if [[ -n "${STOIC_PHRASE_QUOTE:-}" ]]; then
     printf '%s\n' "$STOIC_PHRASE_QUOTE"
     return
   fi
 
+  local response="" quote="" author=""
   if command -v curl >/dev/null 2>&1; then
-    response="$(curl -fsS --max-time 10 "$API_URL" 2>/dev/null || true)"
-
-    if [[ -n "$response" ]] && command -v jq >/dev/null 2>&1; then
-      quote="$(printf '%s' "$response" | jq -r '.text // .quote // empty' 2>/dev/null || true)"
-      author="$(printf '%s' "$response" | jq -r '.author // empty' 2>/dev/null || true)"
-
-      if [[ -n "$quote" && "$quote" != "null" ]]; then
-        if [[ -n "$author" && "$author" != "null" ]]; then
-          printf '%s\n%s\n' "$quote" "— ${author}"
-        else
-          printf '%s\n' "$quote"
-        fi
-        return
-      fi
-    fi
+    response="$(curl -fsS -L --max-time 10 "$API_URL" 2>/dev/null || true)"
   fi
 
-  printf '%s\n' "$DEFAULT_QUOTE"
+  if [[ -n "$response" ]] && command -v jq >/dev/null 2>&1; then
+    quote="$(printf '%s' "$response"  | jq -r '.text  // .quote  // empty' 2>/dev/null || true)"
+    author="$(printf '%s' "$response" | jq -r '.author // empty' 2>/dev/null || true)"
+  fi
+
+  if [[ -z "$quote" || "$quote" == "null" ]]; then
+    quote="$DEFAULT_QUOTE"
+    author="$DEFAULT_AUTHOR"
+  fi
+
+  [[ -z "$author" || "$author" == "null" ]] && author="$DEFAULT_AUTHOR"
+
+  printf '"%s"\n\n    — %s\n' "$quote" "$author"
 }
 
 run_startup() {
-  local username style quote_block initial_setup=0
+  [[ "$STARTUP_MODE" -eq 1 && -n "${STOIC_PHRASE_DISABLED:-}" ]] && return 0
 
-  if [[ "$STARTUP_MODE" -eq 1 && -n "${STOIC_PHRASE_DISABLED:-}" ]]; then
-    return 0
-  fi
-
+  local first_run=0
   if [[ ! -f "$USERNAME_FILE" || ! -f "$STYLE_FILE" ]]; then
-    initial_setup=1
+    first_run=1
   fi
 
+  local username style
   username="$(resolve_username)"
   style="$(resolve_style)"
 
   if [[ "$SHOW_BANNER" -eq 1 ]]; then
-    print_banner "$username" "$style" | render_output
-  fi
-
-  if [[ "$SHOW_BANNER" -eq 1 && "$SHOW_QUOTE" -eq 1 ]]; then
+    print_banner "$username" "$style" | colorize
     printf '\n'
   fi
 
   if [[ "$SHOW_QUOTE" -eq 1 ]]; then
-    quote_block="$(fetch_quote)"
-    printf '%s\n' "$quote_block" | render_output
+    fetch_quote | colorize
+    printf '\n'
   fi
 
-  if [[ "$initial_setup" -eq 1 ]]; then
-    offer_startup_hook
+  # Auto-enable startup on first run (no prompt needed)
+  if [[ "$first_run" -eq 1 ]]; then
+    enable_startup_hook
   fi
 }
 
 main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --help|-h)
-        usage
-        return 0
-        ;;
-      --configure)
-        configure_profile
-        return 0
-        ;;
+      --help|-h)        usage; return 0 ;;
+      --configure)      configure_profile; return 0 ;;
+      --enable-startup) enable_startup_hook; return 0 ;;
+      --disable-startup)disable_startup_hook; return 0 ;;
+      --banner-only)    SHOW_QUOTE=0 ;;
+      --quote-only)     SHOW_BANNER=0 ;;
+      --startup)        STARTUP_MODE=1 ;;
       --username)
         shift
-        if [[ $# -eq 0 ]]; then
-          printf 'Error: --username needs a value.\n' >&2
-          return 1
-        fi
+        [[ $# -eq 0 ]] && { printf 'Error: --username necesita un valor.\n' >&2; return 1; }
         USERNAME_OVERRIDE="$1"
         ;;
       --style)
         shift
-        if [[ $# -eq 0 ]]; then
-          printf 'Error: --style needs a value.\n' >&2
-          return 1
-        fi
+        [[ $# -eq 0 ]] && { printf 'Error: --style necesita un valor.\n' >&2; return 1; }
         STYLE_OVERRIDE="$1"
         ;;
-      --enable-startup)
-        enable_startup_hook
-        return 0
-        ;;
-      --disable-startup)
-        disable_startup_hook
-        return 0
-        ;;
-      --banner-only)
-        SHOW_QUOTE=0
-        ;;
-      --quote-only)
-        SHOW_BANNER=0
-        ;;
-      --startup)
-        STARTUP_MODE=1
-        ;;
       *)
-        printf 'Unknown option: %s\n' "$1" >&2
+        printf 'Opción desconocida: %s\n' "$1" >&2
         usage >&2
         return 1
         ;;

@@ -7,6 +7,7 @@ class StoicPhrase < Formula
   license "MIT"
 
   uses_from_macos "curl"
+  depends_on "figlet"
   depends_on "jq"
   depends_on "lolcat"
 
